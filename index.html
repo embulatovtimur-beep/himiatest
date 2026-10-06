@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Викторина по химическим элементам</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E8EEF2;
+    --panel: #F7FAFB;
+    --ink: #12202B;
+    --muted: #55687A;
+    --line: #B9C7D3;
+    --accent: #1F5F8B;
+    --accent-ink: #FFFFFF;
+    --good: #1E7F4F;
+    --good-bg: #D5EEDF;
+    --bad: #B3362B;
+    --bad-bg: #F6D9D5;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-display: "Unbounded", "Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1A23;
+      --panel: #16262F;
+      --ink: #E6EEF3;
+      --muted: #9FB2C0;
+      --line: #2E4352;
+      --accent: #6DB4E3;
+      --accent-ink: #0E1A23;
+      --good: #6FD39F;
+      --good-bg: #173A2A;
+      --bad: #F08A80;
+      --bad-bg: #432320;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1A23;
+    --panel: #16262F;
+    --ink: #E6EEF3;
+    --muted: #9FB2C0;
+    --line: #2E4352;
+    --accent: #6DB4E3;
+    --accent-ink: #0E1A23;
+    --good: #6FD39F;
+    --good-bg: #173A2A;
+    --bad: #F08A80;
+    --bad-bg: #432320;
+  }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+  h1, h2 { font-family: var(--font-display); font-weight: 700; line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(26px, 7vw, 40px); }
+  h2 { font-size: clamp(19px, 4.6vw, 24px); }
+  h1:focus, h2:focus { outline: none; }
+
+  /* progress: a row of small cells, like a strip of the table */
+  .progress { display: flex; gap: 4px; margin-bottom: 20px; }
+  .cell {
+    flex: 1; height: 10px; border-radius: 3px;
+    background: var(--line);
+  }
+  .cell.ok { background: var(--good); }
+  .cell.no { background: var(--bad); }
+  .cell.now { background: var(--accent); }
+
+  /* element tile */
+  .tile {
+    width: 92px; height: 104px; flex: none;
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #12202B;
+    background: var(--tile, #A8C5DA);
+    font-family: var(--font-body);
+    position: relative;
+  }
+  .tile .num { font-size: 13px; font-weight: 700; }
+  .tile .sym { font-family: var(--font-display); font-weight: 700; font-size: 34px; text-align: center; line-height: 1; }
+  .tile .nm { font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile.hidden {
+    background: transparent;
+    border: 2px dashed var(--line);
+    color: var(--muted);
+    align-items: center; justify-content: center;
+  }
+  .tile.hidden .sym { font-size: 40px; }
+  .tile.reveal { animation: flip .45s ease; }
+  @keyframes flip { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+  [data-cat="alkali"]    { --tile: #F4A261; }
+  [data-cat="alkaline"]  { --tile: #E9C46A; }
+  [data-cat="transition"]{ --tile: #A8C5DA; }
+  [data-cat="nonmetal"]  { --tile: #9AD1B5; }
+  [data-cat="halogen"]   { --tile: #C9B6E4; }
+  [data-cat="noble"]     { --tile: #F2A7C3; }
+  [data-cat="actinide"]  { --tile: #D9C3A5; }
+
+  .qhead { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+  .qcount { color: var(--muted); font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+
+  .options { display: grid; gap: 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; text-align: left;
+    padding: 14px 14px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    font: inherit; font-weight: 600;
+    cursor: pointer;
+    min-height: 56px;
+  }
+  .opt:hover:not([disabled]) { border-color: var(--accent); }
+  .opt .mark {
+    flex: none; width: 30px; height: 30px; border-radius: 6px;
+    display: grid; place-items: center;
+    background: var(--bg); font-size: 14px; font-weight: 700; color: var(--muted);
+  }
+  .opt[disabled] { cursor: default; }
+  .opt.right { background: var(--good-bg); border-color: var(--good); }
+  .opt.right .mark { background: var(--good); color: var(--accent-ink); }
+  .opt.wrong { background: var(--bad-bg); border-color: var(--bad); }
+  .opt.wrong .mark { background: var(--bad); color: var(--accent-ink); }
+  .opt.dim { opacity: .6; }
+
+  .explain {
+    margin-top: 16px; padding: 14px 16px;
+    background: var(--panel); border-left: 5px solid var(--accent);
+    border-radius: 6px;
+  }
+  .explain.good { border-left-color: var(--good); }
+  .explain.bad { border-left-color: var(--bad); }
+  .explain strong { display: block; margin-bottom: 4px; }
+
+  .btn {
+    display: inline-block; margin-top: 18px;
+    padding: 14px 24px; min-height: 52px;
+    background: var(--accent); color: var(--accent-ink);
+    border: 0; border-radius: 10px;
+    font: inherit; font-weight: 700; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  .btn:hover { filter: brightness(1.08); }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* title screen */
+  .hero-row { display: flex; gap: 8px; margin: 8px 0 24px; flex-wrap: wrap; }
+  .hero-row .tile { width: 76px; height: 88px; }
+  .hero-row .tile .sym { font-size: 28px; }
+  .lead { color: var(--muted); max-width: 52ch; margin: 14px 0 0; }
+
+  /* results */
+  .score { font-family: var(--font-display); font-weight: 700; font-size: clamp(54px, 18vw, 96px); line-height: 1; margin: 16px 0 6px; }
+  .score small { font-size: .4em; color: var(--muted); font-weight: 500; }
+  .review { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 8px; }
+  .review li {
+    display: grid; grid-template-columns: 28px 1fr; gap: 10px;
+    padding: 10px 12px; background: var(--panel); border-radius: 8px;
+    font-size: 15px;
+  }
+  .review .ic { font-weight: 700; }
+  .review .ok { color: var(--good); }
+  .review .no { color: var(--bad); }
+  .review .ans { color: var(--muted); }
+
+  @media (max-width: 420px) {
+    .tile { width: 78px; height: 92px; }
+    .tile .sym { font-size: 28px; }
+    .qhead { gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile.reveal { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+
+<script>
+(function () {
+  // cat: категория элемента (цвет плитки)
+  var Q = [
+    { q: "Какой химический символ у золота?",
+      opts: ["Ag", "Gd", "Au", "Go"], a: 2,
+      el: { n: 79, s: "Au", name: "Золото", cat: "transition" },
+      why: "Символ Au происходит от латинского Aurum. Ag — это серебро (Argentum)." },
+
+    { q: "Какой элемент самый лёгкий и стоит первым в таблице Менделеева?",
+      opts: ["Гелий", "Водород", "Литий", "Кислород"], a: 1,
+      el: { n: 1, s: "H", name: "Водород", cat: "nonmetal" },
+      why: "У водорода один протон и один электрон — легче него элементов нет." },
+
+    { q: "Какой газ составляет около 78% земной атмосферы?",
+      opts: ["Кислород", "Углекислый газ", "Аргон", "Азот"], a: 3,
+      el: { n: 7, s: "N", name: "Азот", cat: "nonmetal" },
+      why: "Азот N₂ — основная часть воздуха. Кислорода в нём около 21%." },
+
+    { q: "Какой элемент стоит под номером 6 и входит в состав всех органических веществ?",
+      opts: ["Углерод", "Бор", "Азот", "Кремний"], a: 0,
+      el: { n: 6, s: "C", name: "Углерод", cat: "nonmetal" },
+      why: "Из углерода состоят и алмаз, и графит — это разные формы одного элемента." },
+
+    { q: "Какой химический символ у натрия?",
+      opts: ["N", "Na", "Ne", "Nm"], a: 1,
+      el: { n: 11, s: "Na", name: "Натрий", cat: "alkali" },
+      why: "Na — от латинского Natrium. N — это азот, Ne — неон. Натрий — щелочной металл, он бурно реагирует с водой." },
+
+    { q: "Какой металл жидкий при комнатной температуре?",
+      opts: ["Свинец", "Алюминий", "Ртуть", "Олово"], a: 2,
+      el: { n: 80, s: "Hg", name: "Ртуть", cat: "transition" },
+      why: "Ртуть плавится при −39 °C. Символ Hg — от латинского Hydrargyrum. Её пары ядовиты." },
+
+    { q: "Какой галоген входит в состав поваренной соли NaCl?",
+      opts: ["Фтор", "Бром", "Йод", "Хлор"], a: 3,
+      el: { n: 17, s: "Cl", name: "Хлор", cat: "halogen" },
+      why: "Соль NaCl — это соединение натрия и хлора. Сам хлор — ядовитый жёлто-зелёный газ." },
+
+    { q: "Какой химический символ у железа?",
+      opts: ["Fe", "Fr", "F", "Ir"], a: 0,
+      el: { n: 26, s: "Fe", name: "Железо", cat: "transition" },
+      why: "Fe — от латинского Ferrum. F — это фтор, Fr — франций." },
+
+    { q: "Какой газ легче воздуха, не горит и поэтому безопасен для воздушных шаров?",
+      opts: ["Водород", "Метан", "Гелий", "Неон"], a: 2,
+      el: { n: 2, s: "He", name: "Гелий", cat: "noble" },
+      why: "Гелий — благородный газ, он химически почти не реагирует. Водород тоже лёгкий, но горит и взрывоопасен." },
+
+    { q: "Какой химический символ у калия?",
+      opts: ["Ka", "Cl", "Ca", "K"], a: 3,
+      el: { n: 19, s: "K", name: "Калий", cat: "alkali" },
+      why: "K — от латинского Kalium. Ca — это кальций, Cl — хлор." },
+
+    { q: "Какой элемент — главная составляющая костей и зубов (в виде соединений)?",
+      opts: ["Кальций", "Калий", "Магний", "Фосфор"], a: 0,
+      el: { n: 20, s: "Ca", name: "Кальций", cat: "alkaline" },
+      why: "Кость состоит в основном из фосфата кальция. Кальций — щёлочноземельный металл." },
+
+    { q: "Кто создал периодическую таблицу химических элементов?",
+      opts: ["Антуан Лавуазье", "Дмитрий Менделеев", "Михаил Ломоносов", "Нильс Бор"], a: 1,
+      el: { n: 101, s: "Md", name: "Менделевий", cat: "actinide" },
+      why: "Менделеев опубликовал таблицу в 1869 году и предсказал свойства ещё не открытых элементов. В его честь назван элемент №101 — менделевий." }
+  ];
+
+  var app = document.getElementById("app");
+  var LETTERS = ["А", "Б", "В", "Г"];
+  var state;
+
+  function reset() {
+    state = { screen: "start", i: 0, picked: null, results: [] };
+  }
+
+  function tileHTML(el, hidden, reveal) {
+    if (hidden) {
+      return '<div class="tile hidden" aria-hidden="true"><div class="sym">?</div></div>';
+    }
+    return '<div class="tile' + (reveal ? " reveal" : "") + '" data-cat="' + el.cat + '" role="img" aria-label="Элемент ' + el.name + ', номер ' + el.n + ', символ ' + el.s + '">' +
+      '<div class="num">' + el.n + '</div>' +
+      '<div class="sym">' + el.s + '</div>' +
+      '<div class="nm">' + el.name + '</div></div>';
+  }
+
+  function progressHTML() {
+    var h = '<div class="progress" role="img" aria-label="Вопрос ' + (state.i + 1) + ' из ' + Q.length + '">';
+    for (var k = 0; k < Q.length; k++) {
+      var c = "cell";
+      if (k < state.results.length) c += state.results[k] ? " ok" : " no";
+      else if (k === state.i) c += " now";
+      h += '<div class="' + c + '"></div>';
+    }
+    return h + "</div>";
+  }
+
+  function renderStart() {
+    var demo = [
+      { n: 1, s: "H", name: "Водород", cat: "nonmetal" },
+      { n: 11, s: "Na", name: "Натрий", cat: "alkali" },
+      { n: 17, s: "Cl", name: "Хлор", cat: "halogen" },
+      { n: 79, s: "Au", name: "Золото", cat: "transition" },
+      { n: 2, s: "He", name: "Гелий", cat: "noble" }
+    ];
+    var row = demo.map(function (e) { return tileHTML(e, false, false); }).join("");
+    app.innerHTML =
+      '<div class="hero-row">' + row + '</div>' +
+      '<h1 tabindex="-1" id="focus">Викторина по химическим элементам</h1>' +
+      '<p class="lead">' + Q.length + ' вопросов про символы, свойства и историю элементов. После каждого ответа плитка элемента открывается и появляется объяснение.</p>' +
+      '<button class="btn" data-act="start">Начать</button>';
+  }
+
+  function renderQuestion() {
+    var cur = Q[state.i];
+    var answered = state.picked !== null;
+    var opts = cur.opts.map(function (t, k) {
+      var cls = "opt", mark = LETTERS[k], dis = "";
+      if (answered) {
+        dis = " disabled";
+        if (k === cur.a) { cls += " right"; mark = "✓"; }
+        else if (k === state.picked) { cls += " wrong"; mark = "✕"; }
+        else cls += " dim";
+      }
+      return '<button class="' + cls + '" data-act="pick" data-k="' + k + '"' + dis + '>' +
+        '<span class="mark" aria-hidden="true">' + mark + '</span><span>' + t + '</span></button>';
+    }).join("");
+
+    var feedback = "";
+    if (answered) {
+      var ok = state.picked === cur.a;
+      feedback =
+        '<div class="explain ' + (ok ? "good" : "bad") + '">' +
+        '<strong>' + (ok ? "Верно!" : "Неверно. Правильный ответ: " + cur.opts[cur.a]) + '</strong>' +
+        cur.why + '</div>' +
+        '<button class="btn" id="next" data-act="next">' + (state.i === Q.length - 1 ? "Показать результат" : "Дальше") + '</button>';
+    }
+
+    app.innerHTML =
+      progressHTML() +
+      '<div class="qhead">' + tileHTML(cur.el, !answered, answered) +
+      '<div><div class="qcount">Вопрос ' + (state.i + 1) + ' из ' + Q.length + '</div>' +
+      '<h2 tabindex="-1" id="focus">' + cur.q + '</h2></div></div>' +
+      '<div class="options">' + opts + '</div>' + feedback;
+  }
+
+  function renderResults() {
+    var score = state.results.filter(Boolean).length;
+    var total = Q.length;
+    var ratio = score / total;
+    var msg = ratio === 1 ? "Безупречно! Ты знаешь элементы на отлично."
+      : ratio >= 0.75 ? "Очень хороший результат. Осталось повторить пару элементов."
+      : ratio >= 0.5 ? "Неплохо. Загляни в таблицу Менделеева и попробуй ещё раз."
+      : "Есть что повторить. Пройди викторину снова после повторения таблицы.";
+    var items = Q.map(function (c, k) {
+      var ok = state.results[k];
+      return '<li><span class="ic ' + (ok ? "ok" : "no") + '" aria-label="' + (ok ? "верно" : "неверно") + '">' + (ok ? "✓" : "✕") + '</span>' +
+        '<span>' + c.q + '<br><span class="ans">Ответ: ' + c.opts[c.a] + '</span></span></li>';
+    }).join("");
+    app.innerHTML =
+      '<h2 tabindex="-1" id="focus">Результат</h2>' +
+      '<div class="score">' + score + '<small> из ' + total + '</small></div>' +
+      '<p class="lead">' + msg + '</p>' +
+      '<button class="btn" data-act="restart">Пройти заново</button>' +
+      '<ul class="review">' + items + '</ul>';
+  }
+
+  function render() {
+    if (state.screen === "start") renderStart();
+    else if (state.screen === "quiz") renderQuestion();
+    else renderResults();
+  }
+
+  function afterRender(focusNext) {
+    var t = focusNext ? document.getElementById("next") : document.getElementById("focus");
+    if (t) t.focus({ preventScroll: !focusNext ? false : true });
+  }
+
+  function pick(k) {
+    if (state.picked !== null) return;
+    state.picked = k;
+    state.results.push(k === Q[state.i].a);
+    // keep progress cell state for current question in sync
+    render();
+    afterRender(true);
+  }
+
+  function next() {
+    if (state.i < Q.length - 1) {
+      state.i++; state.picked = null;
+      render(); window.scrollTo(0, 0); afterRender(false);
+    } else {
+      state.screen = "results";
+      render(); window.scrollTo(0, 0); afterRender(false);
+    }
+  }
+
+  app.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]");
+    if (!b || b.disabled) return;
+    var act = b.getAttribute("data-act");
+    if (act === "start") { state.screen = "quiz"; render(); window.scrollTo(0, 0); afterRender(false); }
+    else if (act === "pick") pick(parseInt(b.getAttribute("data-k"), 10));
+    else if (act === "next") next();
+    else if (act === "restart") { reset(); render(); window.scrollTo(0, 0); afterRender(false); }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (state.screen !== "quiz") return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) { pick(n - 1); }
+  });
+
+  reset();
+  render();
+})();
+</script>
+</body>
+</html>
